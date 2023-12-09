@@ -1,0 +1,14 @@
+{
+  "name": "com.marosi.benchmark",
+  "version": "1.0.0",
+  "displayName": "Benchmark",
+  "description": "For benchmarking Unity performance",
+  "unity": "2019.4",
+  "type": "library",
+  "hideInEditor": false,
+  "author": {
+    "name": "Csaba Marosi",
+    "email": "marosicsaba91@gmail.com",
+    "url": "csabamarosi.net/unity-tools/"
+  }
+}
