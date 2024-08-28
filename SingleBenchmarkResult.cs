@@ -1,4 +1,4 @@
-﻿namespace Benchmark
+﻿namespace Benchmarking
 {
 	public readonly struct SingleBenchmarkResult
 	{

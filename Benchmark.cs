@@ -1,8 +1,9 @@
-﻿using System;
+﻿/*
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Benchmark
+namespace Benchmarking
 {
 	public class Benchmark
 	{
@@ -61,3 +62,4 @@ namespace Benchmark
 		}
 	}
 }
+*/
