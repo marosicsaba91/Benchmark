@@ -1,27 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace Benchmarking
 {
-	public class BenchmarkTimer
+	public class ModularStopwatch
 	{
-		DateTime _lastStart;
-		readonly Dictionary<string, TimeSpan> _modules = new();
+		long _lastStart;
+
+		readonly Dictionary<string, long> _modules = new();
 		string _currentModuleName;
 
 		public bool IsRunning { get; private set; }
 		public string Name { get; set; }
 
-		public BenchmarkTimer(string name)
+		public ModularStopwatch(string name)
 		{
-
 			Name = name;
 		}
 
-		public BenchmarkTimer()
+		public ModularStopwatch()
 		{
-			Name = "Unnamed Benchmark";
+			Name = "Unnamed Modular Stopwatch";
 		}
 
 		public void Clear()
@@ -48,78 +49,67 @@ namespace Benchmarking
 		public void StartModule(string moduleName)
 		{
 			if (moduleName != _currentModuleName)
-			{
 				SetModule(moduleName);
-			}
 
 			if (!IsRunning)
 			{
 				IsRunning = true;
-				_lastStart = DateTime.Now;
+				_lastStart = Stopwatch.GetTimestamp();
 			}
 		}
 
 		public void SetModule(string moduleName)
 		{
+			long now = Stopwatch.GetTimestamp();
+
 			if (moduleName == null)
 				return;
 			if (moduleName == _currentModuleName)
 				return;
 
 			if (!_modules.ContainsKey(moduleName))
-				_modules.Add(moduleName, TimeSpan.Zero);
+				_modules.Add(moduleName, 0);
 
 			if (!IsRunning)
 			{
 				_currentModuleName = moduleName;
 			}
 			else
-			{
-				DateTime time = DateTime.Now;
-
+			{ 
 				if (_currentModuleName != null)
 				{
-					TimeSpan duration = time - _lastStart;
+					long duration = now - _lastStart;
 					_modules[_currentModuleName] += duration;
 				}
 
 				_currentModuleName = moduleName;
-				_lastStart = time;
+				_lastStart = Stopwatch.GetTimestamp();
 			}
 		}
 
 		public void Stop()
 		{
+			long duration = Stopwatch.GetTimestamp() - _lastStart;
 			if (!IsRunning)
 				return;
 
 			IsRunning = false;
-			TimeSpan duration = DateTime.Now - _lastStart;
 			_modules[_currentModuleName] += duration;
 		}
 
-		public bool TryGetModuleDuration(string moduleName, out TimeSpan duration)
+		public long GetModuleDuration(string moduleName)
 		{
-			bool success = _modules.TryGetValue(moduleName, out duration);
-			if (!success)
-				return false;
+			long now = Stopwatch.GetTimestamp();
+			long duration = _modules[moduleName];
 
 			if (IsRunning)
-				duration += DateTime.Now - _lastStart;
-
-			return true;
-		}
-
-		public TimeSpan GetModuleDuration(string moduleName)
-		{
-			TimeSpan duration = _modules[moduleName];
-
-			if (IsRunning)
-				duration += DateTime.Now - _lastStart;
+			{
+				duration += now - _lastStart;
+				_lastStart = Stopwatch.GetTimestamp();
+			}
 
 			return duration;
 		}
-
 
 		public IEnumerable<string> GetModule() => _modules.Keys;
 
@@ -132,29 +122,40 @@ namespace Benchmarking
 				Stop();
 
 			_stringBuilder.Clear();
-			double allDuration = GetTotalTotalMilliseconds();
-			_stringBuilder.AppendLine($"{Name} - Total Time:\t {allDuration:F2} ms");
+			double allTicks = GetTotalTicks();
+			double allMs = allTicks * ticksToMs;
+			_stringBuilder.AppendLine($"{Name} - Total Time:\t {allMs:F4} ms");
 			_stringBuilder.AppendLine("------------------------------------");
-			foreach (KeyValuePair<string, TimeSpan> module in _modules)
+			foreach (KeyValuePair<string, long> module in _modules)
 			{
-				double duration = module.Value.TotalMilliseconds;
-				double percent = duration / allDuration * 100;
-				_stringBuilder.AppendLine($"{module.Key}:\t {duration:F2} ms\t ({percent:F2} %)");
+				double ticks = module.Value ;
+				double percent = ticks / allTicks * 100;
+				_stringBuilder.AppendLine($"{module.Key}:\t {ticks * ticksToMs:F4} ms\t ({percent:F2} %)");
 			}
 			string result = _stringBuilder.ToString();
 
 			if (didRun)
 				Start();
 			return result;
-
 		}
 
-		public double GetTotalTotalMilliseconds() 
+		public double GetTotalTicks()
 		{
 			double allDuration = 0;
-			foreach (KeyValuePair<string, TimeSpan> module in _modules)
-				allDuration += module.Value.TotalMilliseconds;
+			foreach (KeyValuePair<string, long> module in _modules)
+				allDuration += module.Value;
 			return allDuration;
 		}
+
+		public double GetTotalMilliseconds()
+		{
+			double allDuration = 0;
+			foreach (KeyValuePair<string, long> module in _modules)
+				allDuration += module.Value;
+
+			return allDuration * ticksToMs;
+		}
+
+		const double ticksToMs = 0.0001;
 	}
 }
